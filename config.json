@@ -1,0 +1,17 @@
+{
+  "totalPages": 10,
+  "attributes": [
+    {
+      "name": "class",
+      "count": 7
+    },
+    {
+      "name": "name",
+      "count": 3
+    },
+    {
+      "name": "id",
+      "count": 5
+    }
+  ]
+}
