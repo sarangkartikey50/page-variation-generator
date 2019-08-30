@@ -23,10 +23,11 @@ const createHTMLFile = (name, data) => {
 };
 const manipulateDomData = (dom, config) => {
     let { attributes, totalPages, url } = config
+    deletePages()
     const attributeSet = new Set()
     findAttributes(dom.window.document.body, attributeSet)
     attributes = generateAttributeCountArray(attributeSet, attributes, totalPages)
-    fs.writeFile('./attribute.json', JSON.stringify({ attributes }), (err) => {
+    fs.writeFile('./attribute.json', JSON.stringify({ attributes }, null, 2), (err) => {
         if(err) throw err
     })
     for(let i=1; i<=totalPages; i++){
@@ -75,9 +76,21 @@ const generateAttributeCountArray = (attributeSet, configAttributes, totalPages)
         }
     })
 }
+const deletePages = () => {
+    const directory = 'pages';
+    fs.readdir(directory, (err, files) => {
+    if (err) throw err;
+    for (const file of files) {
+        fs.unlink(path.join(directory, file), err => {
+        if (err) throw err;
+        });
+    }
+    });
+}
 module.exports = {
     generateRandomNumbers,
     createHTMLFile,
     manipulateDomData,
-    findAttributes
+    findAttributes,
+    deletePages
 }
