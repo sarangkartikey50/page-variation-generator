@@ -1,5 +1,8 @@
 const path = require('path')
 const fs = require('fs')
+const jsdom = require("jsdom");
+const { JSDOM } = jsdom;
+
 const generateRandomNumbers = (size, min, max) => {
     const arr = []
     size = max - size
@@ -18,37 +21,63 @@ const createHTMLFile = (name, data) => {
       if (err) throw err;
     })
 };
-const manipulateDomData = (dom) => {
-    fs.readFile('./config.json', function(err, data) {
+const manipulateDomData = (dom, config) => {
+    let { attributes, totalPages, url } = config
+    const attributeSet = new Set()
+    findAttributes(dom.window.document.body, attributeSet)
+    attributes = generateAttributeCountArray(attributeSet, attributes, totalPages)
+    fs.writeFile('./attribute.json', JSON.stringify({ attributes }), (err) => {
         if(err) throw err
-        const config = JSON.parse(data)
-        let { totalPages, attributes } = config
-        attributes = attributes.map(attr => {
-            return {
-                ...attr,
-                pages: generateRandomNumbers(attr.count, 0, totalPages)
-            }
-        })
-        console.log(attributes)
-        for(let i=1; i<=totalPages; i++){
-            const newDom = dom
+    })
+    for(let i=1; i<=totalPages; i++){
+        JSDOM.fromURL(url, {
+            runScripts: "dangerously"
+        }).then(newDom => { 
             Array.from(newDom.window.document.body.children).forEach(child => {
-                attributes.forEach(attr => {
-                    if(attr.pages.includes(i)){
-                        if(child.getAttribute(attr.name)){
-                            const attributeValue = Math.random().toString(36).substring(7)
-                            child.setAttribute(attr.name, attributeValue)
-                        }
-                    }
-                })
+                traverseChildren(child, attributes, i)
             })
-            createHTMLFile(i, dom.serialize())
+            createHTMLFile(i, newDom.serialize())
+        })
+    }
+}
+const traverseChildren = (child, attributes, page) => {
+    attributes.forEach(attr => {
+        if(attr.pages.includes(page)){
+            if(child.getAttribute(attr.name)){
+                const attributeValue = Math.random().toString(36).substring(7)
+                child.setAttribute(attr.name, attributeValue)
+            }
+        }
+    })
+    Array.from(child.children).forEach(newChild => {
+        traverseChildren(newChild, attributes, page)
+    })
+}
+const findAttributes = (element, set) => {
+    element.getAttributeNames().forEach(attr => set.add(attr))
+    Array.from(element.children).forEach(child => findAttributes(child, set))
+}
+const generateAttributeCountArray = (attributeSet, configAttributes, totalPages) => {
+    return Array.from(attributeSet).map(attr => {
+        const found = configAttributes.find(attribute => attribute.name === attr)
+        if(found){
+            return {
+                ...found,
+                pages: generateRandomNumbers(found.count, 0, totalPages)
+            }
+        } else {
+            const count =  Math.floor((Math.random()*totalPages + 1))
+            return {
+                name: attr,
+                count,
+                pages: generateRandomNumbers(count, 0, totalPages)
+            }
         }
     })
 }
-
 module.exports = {
     generateRandomNumbers,
     createHTMLFile,
-    manipulateDomData
+    manipulateDomData,
+    findAttributes
 }
