@@ -5,7 +5,6 @@ const { JSDOM } = jsdom;
 
 const generateRandomNumbers = (size, min, max) => {
     const arr = []
-    size = max - size
     while(arr.length < size){
         var r = Math.floor(Math.random()*max) + 1;
         if(arr.indexOf(r) === -1 && r >= min && r <= max) arr.push(r);
@@ -45,7 +44,7 @@ const traverseChildren = (child, attributes, page) => {
     attributes.forEach(attr => {
         if(attr.pages.includes(page)){
             if(child.getAttribute(attr.name)){
-                const attributeValue = Math.random().toString(36).substring(7)
+                const attributeValue = String.fromCharCode(Math.ceil(Math.random()*26 + 96)) + Math.random().toString(36).substring(7)
                 child.setAttribute(attr.name, attributeValue)
             }
         }
